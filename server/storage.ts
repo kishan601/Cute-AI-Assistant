@@ -29,6 +29,8 @@ export interface IStorage {
   getAllConversations(): Promise<Conversation[]>;
   getConversationWithMessages(id: number): Promise<ConversationType | undefined>;
   updateConversationFeedback(id: number, rating: number, feedback: string): Promise<Conversation | undefined>;
+  updateConversationTitle(id: number, title: string): Promise<Conversation | undefined>;
+  deleteConversation(id: number): Promise<boolean>;
   getConversationsByRating(rating: number): Promise<Conversation[]>;
 }
 
@@ -168,6 +170,28 @@ export class MemStorage implements IStorage {
     return Array.from(this.conversations.values())
       .filter(conv => conv.rating === rating)
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+  
+  async updateConversationTitle(id: number, title: string): Promise<Conversation | undefined> {
+    const conversation = this.conversations.get(id);
+    if (!conversation) return undefined;
+    
+    const updatedConversation = { ...conversation, title };
+    this.conversations.set(id, updatedConversation);
+    return updatedConversation;
+  }
+  
+  async deleteConversation(id: number): Promise<boolean> {
+    if (!this.conversations.has(id)) return false;
+    
+    // Delete all messages for this conversation first
+    const messages = await this.getMessagesByConversationId(id);
+    messages.forEach(message => {
+      this.messages.delete(message.id);
+    });
+    
+    // Delete the conversation
+    return this.conversations.delete(id);
   }
 }
 

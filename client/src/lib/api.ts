@@ -30,6 +30,16 @@ export const api = {
     return res.json();
   },
   
+  async updateConversationTitle(id: number, title: string): Promise<ConversationType> {
+    const res = await apiRequest("PATCH", `/api/conversations/${id}/title`, { title });
+    return res.json();
+  },
+  
+  async deleteConversation(id: number): Promise<{ message: string }> {
+    const res = await apiRequest("DELETE", `/api/conversations/${id}`);
+    return res.json();
+  },
+  
   async getConversationsByRating(rating: number): Promise<ConversationType[]> {
     const res = await fetch(`/api/conversations/rating/${rating}`);
     if (!res.ok) throw new Error("Failed to fetch conversations by rating");

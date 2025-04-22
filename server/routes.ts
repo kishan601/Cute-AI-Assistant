@@ -103,6 +103,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rename conversation (update title)
+  app.patch("/api/conversations/:id/title", async (req, res) => {
+    try {
+      const idSchema = z.number().positive();
+      const id = idSchema.parse(parseInt(req.params.id, 10));
+      
+      const titleSchema = z.object({
+        title: z.string().min(1)
+      });
+      
+      const { title } = titleSchema.parse(req.body);
+      
+      const updatedConversation = await storage.updateConversationTitle(id, title);
+      if (!updatedConversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      
+      res.json(updatedConversation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update conversation title" });
+      }
+    }
+  });
+  
+  // Delete conversation
+  app.delete("/api/conversations/:id", async (req, res) => {
+    try {
+      const idSchema = z.number().positive();
+      const id = idSchema.parse(parseInt(req.params.id, 10));
+      
+      const success = await storage.deleteConversation(id);
+      if (!success) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      
+      res.status(200).json({ message: "Conversation deleted successfully" });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid conversation ID" });
+      } else {
+        res.status(500).json({ message: "Failed to delete conversation" });
+      }
+    }
+  });
+  
   // Create a new message
   app.post("/api/messages", async (req, res) => {
     try {
