@@ -22,7 +22,7 @@ const Chat = () => {
     mutationFn: async (title: string) => {
       const res = await apiRequest("POST", "/api/conversations", {
         title,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         rating: 0,
         feedback: ""
       });

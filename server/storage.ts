@@ -136,8 +136,11 @@ export class MemStorage implements IStorage {
     const messagesForConversation = await this.getMessagesByConversationId(id);
     
     return {
-      ...conversation,
+      id: conversation.id,
+      title: conversation.title,
       timestamp: conversation.timestamp.toISOString(),
+      rating: conversation.rating || 0,
+      feedback: conversation.feedback || "",
       messages: messagesForConversation.map(msg => ({
         id: msg.id,
         conversationId: msg.conversationId,

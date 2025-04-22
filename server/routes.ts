@@ -63,7 +63,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new conversation
   app.post("/api/conversations", async (req, res) => {
     try {
-      const data = insertConversationSchema.parse(req.body);
+      // If timestamp is a string, convert it to a Date object
+      let requestData = { ...req.body };
+      if (requestData.timestamp && typeof requestData.timestamp === 'string') {
+        requestData.timestamp = new Date(requestData.timestamp);
+      }
+      
+      const data = insertConversationSchema.parse(requestData);
       const conversation = await storage.createConversation(data);
       res.status(201).json(conversation);
     } catch (error) {
