@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { EditIcon } from "lucide-react";
+import { EditIcon, MessageCircle, PlusCircle, ClockIcon, Loader2 } from "lucide-react";
+import { ConversationType } from "@shared/schema";
+import { api } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { truncateText } from "@/lib/utils";
 
 type SidebarProps = {
   activeConversationId: number | null;
@@ -9,6 +14,12 @@ type SidebarProps = {
 
 const Sidebar = ({ activeConversationId }: SidebarProps) => {
   const [location, setLocation] = useLocation();
+
+  // Fetch recent conversations
+  const { data: conversations, isLoading, error } = useQuery({
+    queryKey: ['/api/conversations'],
+    queryFn: () => api.getConversations()
+  });
 
   const handleNewChat = () => {
     setLocation("/");
@@ -22,6 +33,10 @@ const Sidebar = ({ activeConversationId }: SidebarProps) => {
     setLocation("/feedback");
   };
 
+  const handleConversationClick = (id: number) => {
+    setLocation(`/chat/${id}`);
+  };
+
   return (
     <div className="w-full md:w-64 bg-white md:h-screen flex flex-col border-r border-gray-200">
       <div className="p-4 flex items-center space-x-2 border-b border-gray-200">
@@ -33,13 +48,9 @@ const Sidebar = ({ activeConversationId }: SidebarProps) => {
         </div>
       </div>
       
-      <div className="p-4 flex items-center space-x-2">
+      <div className="p-4 flex items-center space-x-2 cursor-pointer" onClick={handleNewChat}>
         <div className="w-8 h-8 bg-[#9F8FEF] rounded-full flex items-center justify-center">
-          <svg className="w-5 h-5 text-white" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8s8 3.59 8 8s-3.59 8-8 8z"/>
-            <path fill="currentColor" d="M6.5 12h11v1h-11z"/>
-            <path fill="currentColor" d="M12 7.5v11h-1v-11z"/>
-          </svg>
+          <PlusCircle className="w-5 h-5 text-white" />
         </div>
         <div className="flex items-center">
           <span className="text-lg font-semibold">New Chat</span>
@@ -69,8 +80,47 @@ const Sidebar = ({ activeConversationId }: SidebarProps) => {
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 mt-4">
-        {/* Future: Past conversations sidebar items */}
+      {/* Recent Conversations section */}
+      <div className="mt-4 px-4">
+        <h3 className="text-sm font-medium text-gray-500 flex items-center">
+          <ClockIcon size={14} className="mr-1" />
+          Recent Conversations
+        </h3>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-2 mt-1">
+        {isLoading ? (
+          <div className="flex justify-center items-center p-4 text-gray-500">
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <span className="text-sm">Loading...</span>
+          </div>
+        ) : error ? (
+          <div className="text-red-500 text-sm p-3">Failed to load conversations</div>
+        ) : conversations && conversations.length > 0 ? (
+          conversations.map((conversation) => (
+            <div
+              key={conversation.id}
+              onClick={() => handleConversationClick(conversation.id)}
+              className={`p-2 rounded-md flex items-start mb-1 cursor-pointer hover:bg-gray-100 transition-colors ${
+                activeConversationId === conversation.id ? "bg-gray-100" : ""
+              }`}
+            >
+              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2 flex-shrink-0">
+                <MessageCircle size={14} className="text-gray-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm text-gray-900 truncate">{conversation.title}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formatDistanceToNow(new Date(conversation.timestamp), { addSuffix: true })}
+                </p>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center p-4 text-gray-500 text-sm">
+            No conversations yet
+          </div>
+        )}
       </div>
     </div>
   );

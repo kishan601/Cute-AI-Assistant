@@ -8,10 +8,17 @@ import Chat from "@/pages/Chat";
 import History from "@/pages/History";
 import FeedbackOverview from "@/pages/FeedbackOverview";
 
+// Route with conversation ID - wouter extracts params differently
+const ChatRoute = (props: any) => {
+  const conversationId = parseInt(props.params.id, 10);
+  return <Chat initialConversationId={conversationId} />;
+};
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Chat} />
+      <Route path="/chat/:id" component={ChatRoute} />
       <Route path="/history" component={History} />
       <Route path="/feedback" component={FeedbackOverview} />
       <Route component={NotFound} />

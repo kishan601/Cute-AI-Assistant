@@ -9,9 +9,13 @@ import SuggestedQueries from "@/components/SuggestedQueries";
 import FeedbackForm from "@/components/FeedbackForm";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
-const Chat = () => {
+interface ChatProps {
+  initialConversationId?: number;
+}
+
+const Chat = ({ initialConversationId }: ChatProps) => {
   const [location, setLocation] = useLocation();
-  const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
+  const [activeConversationId, setActiveConversationId] = useState<number | null>(initialConversationId || null);
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [titleFromFirstMessage, setTitleFromFirstMessage] = useState("");
