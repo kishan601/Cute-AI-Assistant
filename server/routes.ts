@@ -174,6 +174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sender: "user",
         content: message,
         timestamp: new Date(),
+        liked: false,
+        disliked: false
       });
       
       // Generate AI response based on user message
@@ -196,6 +198,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sender: "ai",
         content: aiResponse,
         timestamp: new Date(),
+        liked: false,
+        disliked: false
       });
       
       res.json({

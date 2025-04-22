@@ -28,8 +28,16 @@ export const messages = pgTable("messages", {
   disliked: boolean("disliked").default(false),
 });
 
-export const insertMessageSchema = createInsertSchema(messages).omit({
-  id: true,
+// Create a custom schema for message inserts that accepts string timestamps
+export const insertMessageSchema = z.object({
+  conversationId: z.number(),
+  sender: z.string(),
+  content: z.string(),
+  timestamp: z.union([z.string(), z.date()]).transform(val => 
+    typeof val === 'string' ? new Date(val) : val
+  ),
+  liked: z.boolean().optional().default(false),
+  disliked: z.boolean().optional().default(false)
 });
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
@@ -44,8 +52,14 @@ export const conversations = pgTable("conversations", {
   feedback: text("feedback").default(""),
 });
 
-export const insertConversationSchema = createInsertSchema(conversations).omit({
-  id: true,
+// Create a custom schema for conversation inserts that accepts string timestamps
+export const insertConversationSchema = z.object({
+  title: z.string(),
+  timestamp: z.union([z.string(), z.date()]).transform(val => 
+    typeof val === 'string' ? new Date(val) : val
+  ),
+  rating: z.number().default(0),
+  feedback: z.string().default("")
 });
 
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
