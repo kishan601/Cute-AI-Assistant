@@ -23,7 +23,7 @@ export const api = {
   async createConversation(title: string): Promise<ConversationType> {
     const res = await apiRequest("POST", "/api/conversations", {
       title,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
       rating: 0,
       feedback: ""
     });

@@ -73,7 +73,13 @@ export class MemStorage implements IStorage {
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
     const id = this.currentMessageId++;
     const timestamp = new Date();
-    const message: Message = { ...insertMessage, id, timestamp };
+    const message: Message = { 
+      ...insertMessage, 
+      id, 
+      timestamp,
+      liked: insertMessage.liked || false,
+      disliked: insertMessage.disliked || false 
+    };
     this.messages.set(id, message);
     return message;
   }
@@ -102,7 +108,13 @@ export class MemStorage implements IStorage {
   async createConversation(insertConversation: InsertConversation): Promise<Conversation> {
     const id = this.currentConversationId++;
     const timestamp = new Date();
-    const conversation: Conversation = { ...insertConversation, id, timestamp };
+    const conversation: Conversation = { 
+      ...insertConversation, 
+      id, 
+      timestamp,
+      rating: insertConversation.rating || 0,
+      feedback: insertConversation.feedback || ""
+    };
     this.conversations.set(id, conversation);
     return conversation;
   }
@@ -132,8 +144,8 @@ export class MemStorage implements IStorage {
         sender: msg.sender as 'user' | 'ai',
         content: msg.content,
         timestamp: msg.timestamp.toISOString(),
-        liked: msg.liked,
-        disliked: msg.disliked
+        liked: msg.liked === null ? undefined : msg.liked,
+        disliked: msg.disliked === null ? undefined : msg.disliked
       })).sort((a, b) => 
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       )
