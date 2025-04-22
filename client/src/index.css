@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 224 19% 24%; /* #343541 charcoal text color */
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 224 19% 24%;
+  --card: 0 0% 100%;
+  --card-foreground: 224 19% 24%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --primary: 160 84% 35%; /* #10A37F sage green primary */
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 1.5% 97%; /* #F7F7F8 light grey secondary */
+  --secondary-foreground: 224 19% 24%;
+  --accent: 219 28% 25%; /* #2B3A55 navy blue accent */
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 160 84% 35%;
+  --radius: 0.5rem;
+  
+  /* Custom colors */
+  --light-purple: 259 80% 95%; /* #E9E3FF light purple */
+  --medium-purple: 252 69% 75%; /* #9F8FEF medium purple */
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 160 84% 35%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 219 28% 25%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 240 4.9% 83.9%;
+  --radius: 0.5rem;
+  
+  /* Custom colors */
+  --light-purple: 259 40% 20%;
+  --medium-purple: 252 69% 65%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-[#f5f5fa] text-foreground;
+  }
+}
+
+/* Global Styles */
+.chat-container {
+  height: calc(100vh - 130px);
+}
+
+/* Message Bubble Styles */
+.user-message {
+  @apply flex justify-end mb-4;
+}
+
+.ai-message {
+  @apply flex justify-start mb-4;
+}
+
+.message-bubble {
+  @apply p-4 rounded-lg max-w-[80%] relative;
+}
+
+.user-bubble {
+  @apply bg-primary text-white;
+}
+
+.ai-bubble {
+  @apply bg-white text-foreground border border-gray-200;
+}
+
+/* Feedback buttons that show on hover */
+.feedback-buttons {
+  @apply absolute -right-16 top-1/2 transform -translate-y-1/2 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity;
+}
+
+.feedback-button {
+  @apply w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-md hover:bg-gray-100;
+}
+
+/* Star Rating Styles */
+.star-button {
+  @apply text-2xl text-gray-300 hover:text-yellow-400 cursor-pointer transition-colors;
+}
+
+.star-active {
+  @apply text-yellow-400;
+}
