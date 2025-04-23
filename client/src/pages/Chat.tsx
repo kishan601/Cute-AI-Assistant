@@ -8,6 +8,7 @@ import MessageBubble from "@/components/MessageBubble";
 import SuggestedQueries from "@/components/SuggestedQueries";
 import FeedbackForm from "@/components/FeedbackForm";
 import SearchIndicator from "@/components/SearchIndicator";
+import Footer from "@/components/Footer";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { Bot, ChevronDown, Loader2 } from "lucide-react";
@@ -444,24 +445,7 @@ const Chat = ({ initialConversationId }: ChatProps) => {
                 {renderMessages()}
                 
                 {chatMessageMutation.isPending && (
-                  <>
-                    {/* Check if the message might trigger a search */}
-                    {messages.length > 0 && 
-                     messages[messages.length - 1].sender === 'user' && 
-                     shouldShowSearchIndicator(messages[messages.length - 1].content) ? (
-                      <SearchIndicator isSearching={true} />
-                    ) : (
-                      <div className="flex justify-start mb-4">
-                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-lg shadow-sm">
-                          <div className="flex space-x-2">
-                            <div className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "0s" }}></div>
-                            <div className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-                            <div className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </>
+                  <SearchIndicator isSearching={true} />
                 )}
                 
                 {showFeedbackForm && (
@@ -500,6 +484,9 @@ const Chat = ({ initialConversationId }: ChatProps) => {
               disabled={chatMessageMutation.isPending || isLoadingConversation || showFeedbackForm || isProcessingMessage}
             />
           </div>
+          
+          {/* Footer */}
+          <Footer className="mt-auto" />
         </div>
       </div>
     </div>

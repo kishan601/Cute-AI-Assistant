@@ -282,7 +282,7 @@ export async function chatHandler(req: Request, res: Response) {
       } else if (message.toLowerCase().includes('thank')) {
         aiResponse = "You're welcome! I'm happy to help. Is there anything else you'd like to know?";
       } else if (message.toLowerCase().includes('your name')) {
-        aiResponse = "I'm an AI assistant built to help answer your questions and provide information. Is there something specific you'd like to know about?";
+        aiResponse = "I'm an AI assistant designed and handcrafted by Kishan. I'm here to help answer your questions and provide information. Is there something specific you'd like to know about?";
       } else if (message.toLowerCase().includes('what can you help') || message.toLowerCase().includes('what can you do')) {
         aiResponse = "I can help you with a variety of tasks including:\n\n" +
           "• Answering questions about almost any topic\n" +
