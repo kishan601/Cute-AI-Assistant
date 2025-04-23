@@ -19,7 +19,7 @@ const MessageBubble = ({ message, onFeedback }: MessageBubbleProps) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);
-    }, 100);
+    }, 50);
     
     return () => clearTimeout(timer);
   }, []);
@@ -51,10 +51,11 @@ const MessageBubble = ({ message, onFeedback }: MessageBubbleProps) => {
     <div 
       ref={messageRef}
       className={cn(
-        "message mb-6 transition-opacity duration-300 ease-in-out",
+        "message mb-6",
         sender === 'user' ? "user-message" : "ai-message",
         !isVisible && "opacity-0",
-        isVisible && "opacity-100"
+        isVisible && sender === 'user' ? "animate-slide-in-right" : 
+        isVisible && sender === 'ai' ? "animate-slide-in" : ""
       )}
     >
       <div className={cn(
@@ -80,7 +81,8 @@ const MessageBubble = ({ message, onFeedback }: MessageBubbleProps) => {
             "message-bubble rounded-lg p-4 shadow-sm inline-block",
             sender === 'user' ? 
               "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white dark:from-indigo-600 dark:to-indigo-800" : 
-              "bg-white text-gray-800 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+              "bg-white text-gray-800 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100",
+            isVisible && "animate-pulse-once"
           )}>
             <p 
               className="message-text whitespace-pre-wrap" 

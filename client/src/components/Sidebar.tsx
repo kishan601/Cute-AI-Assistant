@@ -86,8 +86,19 @@ const Sidebar = ({ activeConversationId }: SidebarProps) => {
   });
 
   // Event handlers
-  const handleNewChat = () => {
-    setLocation("/");
+  const handleNewChat = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    e.preventDefault(); // Prevent default behavior
+    
+    // Clear any existing navigation state
+    queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+    
+    // Use setTimeout to ensure this happens after current execution
+    setTimeout(() => {
+      // Force a hard navigation to root path
+      window.history.pushState({}, "", "/");
+      setLocation("/");
+    }, 0);
   };
 
   const handlePastConversations = () => {
@@ -100,6 +111,11 @@ const Sidebar = ({ activeConversationId }: SidebarProps) => {
 
   const handleConversationClick = (id: number) => {
     if (editingId === id) return; // Don't navigate when editing
+    
+    // First set loading state or clear existing data if needed
+    queryClient.cancelQueries({ queryKey: ['/api/conversations', activeConversationId] });
+    
+    // Then navigate
     setLocation(`/chat/${id}`);
   };
 
@@ -192,12 +208,14 @@ const Sidebar = ({ activeConversationId }: SidebarProps) => {
         </div>
       </div>
       
-      <div 
+      {/* New Chat Button - Improved with better event handling */}
+      <Button 
         className={cn(
-          "p-4 flex items-center space-x-2 cursor-pointer rounded-md transition-all duration-200 mx-2 mt-3",
+          "flex items-center space-x-2 rounded-md transition-all duration-200 mx-2 mt-3",
           "hover:bg-indigo-50 dark:hover:bg-indigo-900/30",
           "border border-indigo-100 dark:border-indigo-900/50",
-          "shadow-sm"
+          "shadow-sm p-4 justify-start",
+          "bg-white dark:bg-gray-900 h-auto"
         )} 
         onClick={handleNewChat}
       >
@@ -207,7 +225,7 @@ const Sidebar = ({ activeConversationId }: SidebarProps) => {
         <div className="flex items-center">
           <span className="font-semibold text-indigo-700 dark:text-indigo-300">New Chat</span>
         </div>
-      </div>
+      </Button>
 
       <div className="px-2 mt-4 space-y-2">
         <Button

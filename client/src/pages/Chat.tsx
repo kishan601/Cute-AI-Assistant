@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { MessageType, ConversationType } from "@shared/schema";
 import Sidebar from "@/components/Sidebar";
@@ -10,8 +10,9 @@ import FeedbackForm from "@/components/FeedbackForm";
 import SearchIndicator from "@/components/SearchIndicator";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
-import { Bot, ChevronDown, Loader2, Search } from "lucide-react";
+import { Bot, ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatProps {
   initialConversationId?: number;
@@ -19,18 +20,35 @@ interface ChatProps {
 
 const Chat = ({ initialConversationId }: ChatProps) => {
   const [location, setLocation] = useLocation();
-  const [activeConversationId, setActiveConversationId] = useState<number | null>(initialConversationId || null);
+  const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [titleFromFirstMessage, setTitleFromFirstMessage] = useState("");
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const scrollButtonRef = useRef<HTMLButtonElement>(null);
-  const [isProcessingMessage, setIsProcessingMessage] = useState(false); // Added to prevent duplicate submissions
-  const [lastSentMessage, setLastSentMessage] = useState(""); // Added to track last sent message
+  const [isProcessingMessage, setIsProcessingMessage] = useState(false);
+  const [lastSentMessage, setLastSentMessage] = useState("");
+  const queryClientRef = useQueryClient();
+  const { toast } = useToast();
+
+  // Update activeConversationId when initialConversationId changes
+  useEffect(() => {
+    // Only set the activeConversationId if initialConversationId is provided
+    if (initialConversationId) {
+      console.log("Setting active conversation ID from props:", initialConversationId);
+      setActiveConversationId(initialConversationId);
+    } else if (location === "/") {
+      // Reset state when navigating to home/new chat
+      console.log("Resetting active conversation ID - at root path");
+      setActiveConversationId(null);
+      setMessages([]);
+    }
+  }, [initialConversationId, location]);
 
   // Create a new conversation
   const createConversationMutation = useMutation({
     mutationFn: async (title: string) => {
+      console.log("Creating new conversation with title:", title);
       const res = await apiRequest("POST", "/api/conversations", {
         title,
         timestamp: new Date().toISOString(),
@@ -40,33 +58,81 @@ const Chat = ({ initialConversationId }: ChatProps) => {
       return res.json();
     },
     onSuccess: (data: ConversationType) => {
+      console.log("Successfully created conversation:", data);
+      queryClientRef.invalidateQueries({ queryKey: ["/api/conversations"] });
+      // Update the active conversation ID
       setActiveConversationId(data.id);
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      // Update URL to reflect the new conversation
+      setLocation(`/chat/${data.id}`);
+    },
+    onError: (error) => {
+      console.error("Error creating conversation:", error);
+      toast({
+        title: "Conversation creation failed",
+        description: "Could not create a new conversation. Please try again.",
+        variant: "destructive"
+      });
+      setIsProcessingMessage(false);
     }
   });
 
   // Get conversation with messages if activeConversationId exists
-  const { data: conversation, isLoading: isLoadingConversation } = useQuery({
+  const { data: conversation, isLoading: isLoadingConversation, error: conversationError } = useQuery({
     queryKey: ["/api/conversations", activeConversationId],
     queryFn: async () => {
       if (!activeConversationId) return null;
-      const res = await fetch(`/api/conversations/${activeConversationId}`);
-      if (!res.ok) throw new Error("Failed to fetch conversation");
-      return res.json();
+      console.log("Fetching conversation:", activeConversationId);
+      try {
+        const res = await fetch(`/api/conversations/${activeConversationId}`);
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error(`Failed to fetch conversation: ${errorText}`);
+          throw new Error("Failed to fetch conversation");
+        }
+        return res.json();
+      } catch (error) {
+        console.error("Error fetching conversation:", error);
+        throw error;
+      }
     },
-    enabled: !!activeConversationId
+    enabled: !!activeConversationId,
+    staleTime: 1000, // 1 second - to prevent excessive refetching
+    refetchOnWindowFocus: false, // Disable automatic refetching on window focus
+    retry: 1 // Only retry once
   });
+  
+  // Redirect to home page if conversation not found
+  useEffect(() => {
+    if (conversationError && activeConversationId) {
+      toast({
+        title: "Conversation not found",
+        description: "Redirecting to home page",
+        variant: "destructive"
+      });
+      
+      // Navigate to home page
+      setTimeout(() => {
+        setActiveConversationId(null);
+        setLocation("/");
+      }, 1000);
+    }
+  }, [conversationError, activeConversationId, setLocation]);
 
   // Submit a chat message
   const chatMessageMutation = useMutation({
     mutationFn: async ({ conversationId, message }: { conversationId: number, message: string }) => {
-      console.log(`Sending message to API: ${message}`);
-      const res = await apiRequest("POST", "/api/chat", { conversationId, message });
-      return res.json();
+      console.log(`Sending message to API: ${message} to conversation: ${conversationId}`);
+      try {
+        const res = await apiRequest("POST", "/api/chat", { conversationId, message });
+        return res.json();
+      } catch (error) {
+        console.error("Error in chat message API call:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       // Just invalidate the query to fetch the updated conversation
-      queryClient.invalidateQueries({ 
+      queryClientRef.invalidateQueries({ 
         queryKey: ["/api/conversations", activeConversationId]
       });
       setIsProcessingMessage(false);
@@ -74,6 +140,11 @@ const Chat = ({ initialConversationId }: ChatProps) => {
     onError: (error) => {
       console.error("Error sending message:", error);
       setIsProcessingMessage(false);
+      toast({
+        title: "Failed to send message",
+        description: "Your message could not be sent. Please try again.",
+        variant: "destructive"
+      });
     }
   });
 
@@ -88,7 +159,7 @@ const Chat = ({ initialConversationId }: ChatProps) => {
         prevMessages.map(msg => msg.id === data.id ? { ...msg, liked: data.liked, disliked: data.disliked } : msg)
       );
       
-      queryClient.invalidateQueries({ 
+      queryClientRef.invalidateQueries({ 
         queryKey: ["/api/conversations", activeConversationId] 
       });
     }
@@ -102,11 +173,16 @@ const Chat = ({ initialConversationId }: ChatProps) => {
     },
     onSuccess: () => {
       setShowFeedbackForm(false);
+      queryClientRef.invalidateQueries({ queryKey: ["/api/conversations"] });
+      toast({
+        title: "Feedback submitted",
+        description: "Thank you for your feedback!",
+      });
+      // Reset state and navigate to home
       setActiveConversationId(null);
       setMessages([]);
       setTitleFromFirstMessage("");
-      
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      setLocation("/");
     }
   });
 
@@ -137,32 +213,28 @@ const Chat = ({ initialConversationId }: ChatProps) => {
       
       // Create a new conversation if one doesn't exist
       if (!activeConversationId) {
-        console.log("Creating new conversation");
+        console.log("Creating new conversation from message:", message);
+        // Use the message as the title (truncated if needed)
         setTitleFromFirstMessage(message);
-        const newConversation = await createConversationMutation.mutateAsync(message.slice(0, 30) + (message.length > 30 ? "..." : ""));
-        console.log("New conversation created:", newConversation);
-        
-        // After creating a conversation, send the message directly instead of waiting for effect
-        if (newConversation && newConversation.id) {
-          setTimeout(() => {
-            chatMessageMutation.mutate({ 
-              conversationId: newConversation.id, 
-              message 
-            });
-          }, 100);
-        }
+        const title = message.length > 30 ? message.slice(0, 27) + "..." : message;
+        await createConversationMutation.mutateAsync(title);
         return;
       }
       
       // Send the message to the existing conversation
       console.log("Sending message to conversation:", activeConversationId);
-      chatMessageMutation.mutate({ 
+      await chatMessageMutation.mutateAsync({ 
         conversationId: activeConversationId, 
         message 
       });
     } catch (error) {
       console.error("Error handling message:", error);
       setIsProcessingMessage(false);
+      toast({
+        title: "Error",
+        description: "Failed to process your message. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -194,6 +266,18 @@ const Chat = ({ initialConversationId }: ChatProps) => {
     }
   };
 
+  // Effect to handle the case when activeConversationId is set but titleFromFirstMessage is still pending
+  useEffect(() => {
+    if (titleFromFirstMessage && activeConversationId) {
+      console.log("Sending first message after conversation creation:", titleFromFirstMessage, "to", activeConversationId);
+      chatMessageMutation.mutate({
+        conversationId: activeConversationId,
+        message: titleFromFirstMessage
+      });
+      setTitleFromFirstMessage("");
+    }
+  }, [activeConversationId, titleFromFirstMessage, chatMessageMutation]);
+
   // Update messages when conversation data changes
   useEffect(() => {
     if (conversation && conversation.messages) {
@@ -201,20 +285,26 @@ const Chat = ({ initialConversationId }: ChatProps) => {
       const sortedMessages = [...conversation.messages].sort(
         (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
-      setMessages(sortedMessages);
+      
+      // Log for debugging
+      console.log("Updating messages from conversation:", activeConversationId, "message count:", sortedMessages.length);
+      
+      // Check for new messages only
+      if (messages.length !== sortedMessages.length) {
+        console.log("Message count changed, updating messages");
+        setMessages(sortedMessages);
+      } else {
+        // Only update if there's an actual content difference (using JSON stringify to avoid infinite loop)
+        const currentMessagesString = JSON.stringify(messages.map(m => ({ id: m.id, content: m.content })));
+        const newMessagesString = JSON.stringify(sortedMessages.map(m => ({ id: m.id, content: m.content })));
+        
+        if (currentMessagesString !== newMessagesString) {
+          console.log("Found new message content, updating state");
+          setMessages(sortedMessages);
+        }
+      }
     }
-  }, [conversation]);
-
-  // Create conversation with title after first message is stored
-  useEffect(() => {
-    if (titleFromFirstMessage && activeConversationId) {
-      chatMessageMutation.mutate({
-        conversationId: activeConversationId,
-        message: titleFromFirstMessage
-      });
-      setTitleFromFirstMessage("");
-    }
-  }, [activeConversationId, titleFromFirstMessage]);
+  }, [conversation, activeConversationId]);
 
   // Scroll lock and auto-scroll functionality
   const [autoScroll, setAutoScroll] = useState(true);
