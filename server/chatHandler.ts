@@ -87,7 +87,9 @@ async function performSearch(query: string): Promise<{success: boolean, result?:
     // Ensure API key is available in process.env
     const apiKey = process.env.TAVILY_API_KEY;
     
-    // Log the presence of the API key (without revealing it)
+    // Log more details about the environment
+    console.log(`Environment variables available: ${Object.keys(process.env).join(', ')}`);
+    console.log(`Checking for Tavily API key...`);
     console.log(`Tavily API key exists: ${apiKey ? 'Yes' : 'No'}`);
     
     if (!apiKey) {
@@ -96,6 +98,11 @@ async function performSearch(query: string): Promise<{success: boolean, result?:
         success: false, 
         error: 'Search API key is not configured'
       };
+    }
+    
+    // Log first few characters of the key to verify it's loaded properly (safe to log a few chars)
+    if (apiKey.length > 5) {
+      console.log(`API key starts with: ${apiKey.substring(0, 3)}...`);
     }
     
     console.log(`Performing internet search for: ${query}`);
