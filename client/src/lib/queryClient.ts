@@ -1,5 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { API_URL } from "../config";
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -29,7 +30,12 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // Check if the queryKey already contains the API_URL
+    const url = (queryKey[0] as string).startsWith('http') 
+      ? queryKey[0] as string
+      : `${API_URL}${queryKey[0] as string}`;
+      
+    const res = await fetch(url, {
       credentials: "include",
     });
 

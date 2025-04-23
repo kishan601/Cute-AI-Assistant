@@ -2,7 +2,7 @@ import { apiRequest } from "./queryClient";
 import { API_URL } from "../config";
 import { 
   MessageType, 
-  ConversationType
+  ConversationType 
 } from "../types";
 
 // API functions for the chat application
