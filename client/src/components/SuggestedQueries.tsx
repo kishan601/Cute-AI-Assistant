@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { MessageCircle, Map, Thermometer, Smile, Bot, Zap, Star, Award, Search } from "lucide-react";
+import { MessageCircle, Map, Thermometer, Smile, Bot, Zap, Star, Award, Search, Coffee, Utensils, Cake } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface SuggestedQueriesProps {
@@ -24,16 +24,28 @@ const SuggestedQueries = ({ onQueryClick }: SuggestedQueriesProps) => {
       color: "bg-sky-50 dark:bg-sky-900/20 border-sky-100 dark:border-sky-800/30"
     },
     {
+      question: "Find an easy chocolate cupcake recipe",
+      description: "Get delicious baking recipes",
+      icon: <Cake className="h-5 w-5 text-pink-500" />,
+      color: "bg-pink-50 dark:bg-pink-900/20 border-pink-100 dark:border-pink-800/30"
+    },
+    {
+      question: "How to make the best chocolate milkshake",
+      description: "Find tasty drink recipes",
+      icon: <Coffee className="h-5 w-5 text-amber-500" />,
+      color: "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/30"
+    },
+    {
       question: "What are the top movies of 2023?",
       description: "Find trending entertainment information",
-      icon: <Star className="h-5 w-5 text-amber-500" />,
-      color: "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/30"
+      icon: <Star className="h-5 w-5 text-purple-500" />,
+      color: "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800/30"
     },
     {
       question: "Find information about climate change",
       description: "Research environmental topics online",
-      icon: <Zap className="h-5 w-5 text-purple-500" />,
-      color: "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800/30"
+      icon: <Zap className="h-5 w-5 text-green-500" />,
+      color: "bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/30"
     }
   ];
 
@@ -53,7 +65,7 @@ const SuggestedQueries = ({ onQueryClick }: SuggestedQueriesProps) => {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-lg">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-6xl mx-auto">
       {suggestions.map((suggestion, index) => (
         <div 
           key={index}

@@ -18,16 +18,44 @@ const SEARCH_KEYWORDS = [
   'search', 'find', 'look up', 'google', 'information', 'about', 
   'what is', 'who is', 'where is', 'when is', 'why is', 'how to',
   'latest', 'recent', 'news', 'current', 'today', 'weather',
-  'history', 'facts', 'data'
+  'history', 'facts', 'data', 'recipe', 'receipe', 'how do I', 'tell me about',
+  'what are', 'chocolate', 'make', 'best way to', 'top', 'list of', 'when did',
+  'where can I', 'show me', 'price of', 'cost of', 'explain', 'describe'
+];
+
+// Common chat messages that should NOT trigger a search
+const NON_SEARCH_PHRASES = [
+  'hello', 'hi there', 'how are you', 'nice to meet you', 'thanks', 'thank you',
+  'goodbye', 'bye', 'see you', 'your name', 'who are you', 'what can you do',
+  'help me', 'ok', 'okay', 'yes', 'no', 'please', 'great', 'awesome'
 ];
 
 // Function to determine if a message likely needs internet search
 function shouldPerformSearch(message: string): boolean {
   // Convert to lowercase for case-insensitive matching
-  const lowercaseMessage = message.toLowerCase();
+  const lowercaseMessage = message.toLowerCase().trim();
+  
+  // First check if it's a common non-search phrase
+  if (NON_SEARCH_PHRASES.some(phrase => lowercaseMessage === phrase || 
+      lowercaseMessage.startsWith(phrase + ' ') || 
+      lowercaseMessage.endsWith(' ' + phrase))) {
+    return false;
+  }
+  
+  // If message is longer than 3 words and not in non-search phrases, likely a search
+  const wordCount = lowercaseMessage.split(/\s+/).length;
+  if (wordCount >= 3) {
+    return true;
+  }
   
   // Check if message contains search-indicating keywords
-  return SEARCH_KEYWORDS.some(keyword => lowercaseMessage.includes(keyword));
+  if (SEARCH_KEYWORDS.some(keyword => lowercaseMessage.includes(keyword))) {
+    return true;
+  }
+  
+  // Fallback rule: search for anything that's not a simple greeting
+  // and more than one word (except basic conversational phrases)
+  return wordCount > 1 && !NON_SEARCH_PHRASES.includes(lowercaseMessage);
 }
 
 // Function to perform internet search using Tavily API
@@ -153,7 +181,10 @@ export async function chatHandler(req: Request, res: Response) {
     let aiResponse = "Sorry, I didn't understand your query.";
     
     // Check if this message might benefit from an internet search
-    if (shouldPerformSearch(message)) {
+    const shouldSearch = shouldPerformSearch(message);
+    console.log(`Message "${message}" - Should search: ${shouldSearch}`);
+    
+    if (shouldSearch) {
       // Perform search
       const searchResult = await performSearch(message);
       
