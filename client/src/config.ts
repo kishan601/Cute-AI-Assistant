@@ -1,2 +1,3 @@
 export const API_URL = import.meta.env.PROD 
-  ? "https://your-backend-url.render.com":"";
+  ? "https://cute-ai-assistant.onrender.com" // Backend deployed on Render
+  : "";
