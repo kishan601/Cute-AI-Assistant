@@ -64,7 +64,11 @@ function shouldPerformSearch(message: string): boolean {
 // Function to perform internet search using Tavily API
 async function performSearch(query: string): Promise<{success: boolean, result?: string, error?: string}> {
   try {
+    // Ensure API key is available in process.env
     const apiKey = process.env.TAVILY_API_KEY;
+    
+    // Log the presence of the API key (without revealing it)
+    console.log(`Tavily API key exists: ${apiKey ? 'Yes' : 'No'}`);
     
     if (!apiKey) {
       console.error('Search API key is not configured');
@@ -149,6 +153,18 @@ async function performSearch(query: string): Promise<{success: boolean, result?:
   }
 }
 
+// Set for tracking in-progress messages (deduplication)
+// This is already declared at the top of the file
+// const processingMessages = new Set<string>();
+
+// Cleanup function to ensure keys are removed from the processing set
+const cleanupRequestKey = (key: string) => {
+  if (processingMessages.has(key)) {
+    processingMessages.delete(key);
+    console.log(`Removed key from processing set: ${key}`);
+  }
+};
+
 export async function chatHandler(req: Request, res: Response) {
   // Define requestKey at function scope so it's available in catch block
   let requestKey = '';
@@ -164,12 +180,24 @@ export async function chatHandler(req: Request, res: Response) {
     const { conversationId, message } = messageSchema.parse(req.body);
     
     // Create a unique key for this request to prevent duplicate processing
-    requestKey = `${conversationId}-${message}-${Date.now()}`;
+    // Use the exact message content rather than including timestamp to catch true duplicates
+    requestKey = `${conversationId}-${message}`;
     
     // Check if we're already processing this message
     if (processingMessages.has(requestKey)) {
       console.log("Duplicate message detected, ignoring:", { conversationId, message });
       return res.status(409).json({ message: "Message is already being processed" });
+    }
+    
+    // Check if this exact message already exists in the conversation
+    const existingMessages = await storage.getMessagesByConversationId(conversationId);
+    const isDuplicate = existingMessages.some(msg => 
+      msg.sender === "user" && msg.content === message
+    );
+    
+    if (isDuplicate) {
+      console.log("Duplicate message content detected in database, ignoring:", { conversationId, message });
+      return res.status(409).json({ message: "This exact message already exists in the conversation" });
     }
     
     // Add to processing set
