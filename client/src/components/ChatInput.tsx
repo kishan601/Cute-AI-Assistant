@@ -120,7 +120,7 @@ const ChatInput = ({ onSendMessage, onSaveConversation, disabled = false }: Chat
       </form>
       
       <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-        Press <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">Enter</kbd> to send your message
+        Made with ❤️| Designed and Handcrafted by Kishan.
       </div>
     </div>
   );
