@@ -1,5 +1,2 @@
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-backend-placeholder.onrender.com' // You'll update this after backend deployment
-  : '';
-   
-export default API_URL;
+// API URL config
+export const API_URL = "https://your-backend-url.onrender.com"; // Replace with your Render URL when deployed
