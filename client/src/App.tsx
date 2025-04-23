@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Chat from "@/pages/Chat";
 import History from "@/pages/History";
 import FeedbackOverview from "@/pages/FeedbackOverview";
+import { useEffect } from "react";
 
 // Route with conversation ID - wouter extracts params differently
 const ChatRoute = (props: any) => {
@@ -26,10 +27,25 @@ function Router() {
   );
 }
 
+function ThemeInitializer() {
+  // Ensure the 'dark' class is applied to the document based on the theme in localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+  
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <ThemeInitializer />
         <Toaster />
         <Router />
       </TooltipProvider>
