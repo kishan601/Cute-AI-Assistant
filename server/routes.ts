@@ -208,6 +208,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Internet search API (using Tavily)
+  app.post("/api/search", async (req, res) => {
+    try {
+      // Use our dedicated handler for search
+      const { searchHandler } = await import('./searchHandler');
+      return searchHandler(req, res);
+    } catch (error) {
+      console.error("Error importing search handler:", error);
+      res.status(500).json({ 
+        message: "Failed to process search request",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
