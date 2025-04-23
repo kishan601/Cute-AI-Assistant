@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { MessageCircle, Map, Thermometer, Smile, Bot, Zap, Star, Award, Search, Coffee, Utensils, Cake } from "lucide-react";
+import { MessageCircle, Map, Thermometer, Smile, Bot, Zap, Star, Award, Search, Coffee, Utensils, Cake, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface SuggestedQueriesProps {
@@ -9,6 +9,7 @@ interface SuggestedQueriesProps {
 
 const SuggestedQueries = ({ onQueryClick }: SuggestedQueriesProps) => {
   const [visibleItems, setVisibleItems] = useState<number[]>([]);
+  const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
   
   const suggestions = [
     {
@@ -63,6 +64,15 @@ const SuggestedQueries = ({ onQueryClick }: SuggestedQueriesProps) => {
     
     return () => setVisibleItems([]);
   }, []);
+  
+  // Handle click with visual feedback
+  const handleClick = (question: string, index: number) => {
+    // Set loading state
+    setLoadingIndex(index);
+    
+    // Call the callback
+    onQueryClick(question);
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-6xl mx-auto">
@@ -77,17 +87,23 @@ const SuggestedQueries = ({ onQueryClick }: SuggestedQueriesProps) => {
         >
           <Card 
             className={cn(
-              "border cursor-pointer transition-all duration-200",
+              "border transition-all duration-200",
               "hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700",
               "dark:bg-gray-800/60 group",
-              suggestion.color
+              suggestion.color,
+              loadingIndex !== null && "pointer-events-none", // Disable all cards when loading
+              loadingIndex === index && "border-indigo-400 dark:border-indigo-500 animate-pulse-once"
             )}
-            onClick={() => onQueryClick(suggestion.question)}
+            onClick={() => handleClick(suggestion.question, index)}
           >
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
                 <div className="mt-1 flex-shrink-0">
-                  {suggestion.icon}
+                  {loadingIndex === index ? (
+                    <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />
+                  ) : (
+                    suggestion.icon
+                  )}
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-800 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">

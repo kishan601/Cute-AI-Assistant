@@ -29,8 +29,20 @@ const SEARCH_KEYWORDS = [
 // Common chat messages that should NOT trigger a search
 const NON_SEARCH_PHRASES = [
   'hello', 'hi there', 'how are you', 'nice to meet you', 'thanks', 'thank you',
-  'goodbye', 'bye', 'see you', 'your name', 'who are you', 'what can you do',
-  'help me', 'ok', 'okay', 'yes', 'no', 'please', 'great', 'awesome'
+  'goodbye', 'bye', 'see you', 'your name', 'who are you', 'what can you do', 
+  'what can you help me with', 'what can you help with', 'help me', 'ok', 'okay', 
+  'yes', 'no', 'please', 'great', 'awesome'
+];
+
+// Direct response patterns that don't need search
+const DIRECT_RESPONSE_PATTERNS = [
+  { pattern: /how are you/i, response: true },
+  { pattern: /^hi\b/i, response: true },
+  { pattern: /^hello\b/i, response: true },
+  { pattern: /thank/i, response: true },
+  { pattern: /your name/i, response: true },
+  { pattern: /who are you/i, response: true },
+  { pattern: /what can you (do|help)/i, response: true },
 ];
 
 // Function to determine if a message likely needs internet search
@@ -38,7 +50,15 @@ function shouldPerformSearch(message: string): boolean {
   // Convert to lowercase for case-insensitive matching
   const lowercaseMessage = message.toLowerCase().trim();
   
-  // First check if it's a common non-search phrase
+  // First check if we have a direct pattern match that doesn't need search
+  for (const pattern of DIRECT_RESPONSE_PATTERNS) {
+    if (pattern.pattern.test(lowercaseMessage)) {
+      console.log(`Message "${message}" matches direct response pattern, skipping search`);
+      return false;
+    }
+  }
+  
+  // Next check if it's a common non-search phrase
   if (NON_SEARCH_PHRASES.some(phrase => lowercaseMessage === phrase || 
       lowercaseMessage.startsWith(phrase + ' ') || 
       lowercaseMessage.endsWith(' ' + phrase))) {
@@ -263,6 +283,15 @@ export async function chatHandler(req: Request, res: Response) {
         aiResponse = "You're welcome! I'm happy to help. Is there anything else you'd like to know?";
       } else if (message.toLowerCase().includes('your name')) {
         aiResponse = "I'm an AI assistant built to help answer your questions and provide information. Is there something specific you'd like to know about?";
+      } else if (message.toLowerCase().includes('what can you help') || message.toLowerCase().includes('what can you do')) {
+        aiResponse = "I can help you with a variety of tasks including:\n\n" +
+          "• Answering questions about almost any topic\n" +
+          "• Searching the internet for current information\n" +
+          "• Finding recipes and cooking instructions\n" +
+          "• Providing weather information\n" +
+          "• Offering recommendations for books, movies, etc.\n" +
+          "• Explaining concepts or ideas\n\n" +
+          "Try asking me something specific, and I'll do my best to help!";
       } else {
         // Suggest using search terms
         aiResponse = "I'm not sure I have enough information about that. Try asking a question with search terms like 'search for...' or 'find information about...' so I can look up the latest information for you.";
