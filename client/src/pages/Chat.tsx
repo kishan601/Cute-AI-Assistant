@@ -161,12 +161,48 @@ const Chat = ({ initialConversationId }: ChatProps) => {
     }
   }, [activeConversationId, titleFromFirstMessage]);
 
-  // Scroll to bottom when messages change
+  // Scroll lock and auto-scroll functionality
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
+  
+  // Handle scroll events to detect if user has scrolled up (to disable auto-scroll)
+  const handleScroll = () => {
+    if (!messageContainerRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = messageContainerRef.current;
+    setScrollPosition(scrollTop);
+    setContainerHeight(scrollHeight - clientHeight);
+    
+    // If the user has scrolled up more than 100px, disable auto-scroll
+    // If they scroll to bottom, re-enable auto-scroll
+    const isAtBottom = scrollHeight - clientHeight - scrollTop < 50;
+    setAutoScroll(isAtBottom);
+  };
+  
+  // Attach scroll event listener
   useEffect(() => {
-    if (messageContainerRef.current) {
+    const container = messageContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+  
+  // Scroll to bottom when messages change, but only if autoScroll is enabled
+  useEffect(() => {
+    if (messageContainerRef.current && autoScroll) {
       messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, autoScroll]);
+  
+  // Force scroll to bottom when a new message is being composed
+  const scrollToBottom = () => {
+    if (messageContainerRef.current) {
+      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+      setAutoScroll(true);
+    }
+  };
 
   return (
     <div className="font-inter h-screen flex flex-col md:flex-row overflow-hidden">
