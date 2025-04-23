@@ -87,9 +87,7 @@ async function performSearch(query: string): Promise<{success: boolean, result?:
     // Ensure API key is available in process.env
     const apiKey = process.env.TAVILY_API_KEY;
     
-    // Log more details about the environment
-    console.log(`Environment variables available: ${Object.keys(process.env).join(', ')}`);
-    console.log(`Checking for Tavily API key...`);
+    // Simplified logging - reduce excessive logging to improve performance
     console.log(`Tavily API key exists: ${apiKey ? 'Yes' : 'No'}`);
     
     if (!apiKey) {
@@ -100,77 +98,88 @@ async function performSearch(query: string): Promise<{success: boolean, result?:
       };
     }
     
-    // Log first few characters of the key to verify it's loaded properly (safe to log a few chars)
-    if (apiKey.length > 5) {
-      console.log(`API key starts with: ${apiKey.substring(0, 3)}...`);
-    }
-    
     console.log(`Performing internet search for: ${query}`);
     
-    const response = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        query,
-        search_depth: 'advanced',
-        include_domains: [],
-        exclude_domains: [],
-        max_results: 5,
-        include_answer: true,
-        include_images: false,
-        include_raw_content: false
-      })
-    });
+    // Set a timeout to prevent long-running searches
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Search API error:', errorText);
-      // Check specifically for auth errors
-      if (response.status === 401 || errorText.includes("Unauthorized") || errorText.includes("invalid API key")) {
-        return { 
-          success: false, 
-          error: 'The search API key seems to be invalid or expired. Please provide a valid Tavily API key.'
-        };
-      }
-      return { 
-        success: false, 
-        error: `Error from search API: ${response.statusText}`
-      };
-    }
-    
-    const data: TavilySearchResponse = await response.json();
-    
-    if (data.answer) {
-      return {
-        success: true,
-        result: data.answer
-      };
-    }
-    
-    // If no direct answer, format the search results
-    if (data.results && data.results.length > 0) {
-      let formattedResult = `Here's what I found about "${query}":\n\n`;
-      
-      data.results.forEach((result, index) => {
-        formattedResult += `${index + 1}. ${result.title}\n`;
-        formattedResult += `   ${result.content.substring(0, 150)}...\n`;
-        formattedResult += `   Source: ${result.url}\n\n`;
+    try {
+      const response = await fetch('https://api.tavily.com/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          query,
+          search_depth: 'basic', // Changed from 'advanced' to 'basic' for faster responses
+          include_domains: [],
+          exclude_domains: [],
+          max_results: 3, // Reduced from 5 to 3 for faster responses
+          include_answer: true,
+          include_images: false,
+          include_raw_content: false
+        }),
+        signal: controller.signal
       });
       
+      // Clear the timeout to prevent memory leaks
+      clearTimeout(timeoutId);
+    
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Search API error:', errorText);
+        // Check specifically for auth errors
+        if (response.status === 401 || errorText.includes("Unauthorized") || errorText.includes("invalid API key")) {
+          return { 
+            success: false, 
+            error: 'The search API key seems to be invalid or expired. Please provide a valid Tavily API key.'
+          };
+        }
+        return { 
+          success: false, 
+          error: `Error from search API: ${response.statusText}`
+        };
+      }
+      
+      const data: TavilySearchResponse = await response.json();
+      
+      if (data.answer) {
+        return {
+          success: true,
+          result: data.answer
+        };
+      }
+      
+      // If no direct answer, format the search results
+      if (data.results && data.results.length > 0) {
+        let formattedResult = `Here's what I found about "${query}":\n\n`;
+        
+        data.results.forEach((result, index) => {
+          formattedResult += `${index + 1}. ${result.title}\n`;
+          formattedResult += `   ${result.content.substring(0, 150)}...\n`;
+          formattedResult += `   Source: ${result.url}\n\n`;
+        });
+        
+        return {
+          success: true,
+          result: formattedResult
+        };
+      }
+      
       return {
-        success: true,
-        result: formattedResult
+        success: false,
+        error: 'No results found for this query'
+      };
+    } catch (innerError) {
+      // Handle errors from the fetch operation
+      console.error('Error in fetch operation:', innerError);
+      return { 
+        success: false, 
+        error: innerError instanceof Error ? innerError.message : 'Request timed out or failed'
       };
     }
-    
-    return {
-      success: false,
-      error: 'No results found for this query'
-    };
-    
   } catch (error) {
     console.error('Error in search function:', error);
     return { 
