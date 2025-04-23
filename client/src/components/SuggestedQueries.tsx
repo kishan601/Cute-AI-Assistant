@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { MessageCircle, Map, Thermometer, Smile, Bot, Zap, Star, Award } from "lucide-react";
+import { MessageCircle, Map, Thermometer, Smile, Bot, Zap, Star, Award, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface SuggestedQueriesProps {
@@ -18,20 +18,20 @@ const SuggestedQueries = ({ onQueryClick }: SuggestedQueriesProps) => {
       color: "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800/30"
     },
     {
-      question: "What's the weather like today?",
-      description: "Get current weather information",
-      icon: <Thermometer className="h-5 w-5 text-sky-500" />,
+      question: "Search for the latest news today",
+      description: "Get current news from the internet",
+      icon: <Search className="h-5 w-5 text-sky-500" />,
       color: "bg-sky-50 dark:bg-sky-900/20 border-sky-100 dark:border-sky-800/30"
     },
     {
-      question: "Can you recommend some good books?",
-      description: "Get reading recommendations",
+      question: "What are the top movies of 2023?",
+      description: "Find trending entertainment information",
       icon: <Star className="h-5 w-5 text-amber-500" />,
       color: "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/30"
     },
     {
-      question: "Tell me a fun fact about science",
-      description: "Learn something interesting",
+      question: "Find information about climate change",
+      description: "Research environmental topics online",
       icon: <Zap className="h-5 w-5 text-purple-500" />,
       color: "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800/30"
     }

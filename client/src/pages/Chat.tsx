@@ -220,6 +220,19 @@ const Chat = ({ initialConversationId }: ChatProps) => {
 
   // Get active conversation title
   const activeConversationTitle = conversation?.title || "New Conversation";
+  
+  // Function to determine if a message might trigger an internet search
+  const shouldShowSearchIndicator = (message: string): boolean => {
+    const searchKeywords = [
+      'search', 'find', 'look up', 'google', 'information', 'about', 
+      'what is', 'who is', 'where is', 'when is', 'why is', 'how to',
+      'latest', 'recent', 'news', 'current', 'today', 'weather',
+      'history', 'facts', 'data'
+    ];
+    
+    const lowercaseMessage = message.toLowerCase();
+    return searchKeywords.some(keyword => lowercaseMessage.includes(keyword));
+  };
 
   return (
     <div className="h-screen flex flex-col md:flex-row overflow-hidden bg-gray-50 dark:bg-gray-950">
