@@ -67,6 +67,7 @@ async function performSearch(query: string): Promise<{success: boolean, result?:
     const apiKey = process.env.TAVILY_API_KEY;
     
     if (!apiKey) {
+      console.error('Search API key is not configured');
       return { 
         success: false, 
         error: 'Search API key is not configured'
@@ -96,6 +97,13 @@ async function performSearch(query: string): Promise<{success: boolean, result?:
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Search API error:', errorText);
+      // Check specifically for auth errors
+      if (response.status === 401 || errorText.includes("Unauthorized") || errorText.includes("invalid API key")) {
+        return { 
+          success: false, 
+          error: 'The search API key seems to be invalid or expired. Please provide a valid Tavily API key.'
+        };
+      }
       return { 
         success: false, 
         error: `Error from search API: ${response.statusText}`

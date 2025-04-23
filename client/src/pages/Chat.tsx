@@ -131,6 +131,11 @@ const Chat = ({ initialConversationId }: ChatProps) => {
       
       // Send the message to the existing conversation
       console.log("Sending message to conversation:", activeConversationId);
+      // Don't send duplicate messages
+      if (messages.some(msg => msg.sender === 'user' && msg.content === message)) {
+        console.log("Duplicate message detected, not sending:", message);
+        return;
+      }
       chatMessageMutation.mutate({ 
         conversationId: activeConversationId, 
         message 
