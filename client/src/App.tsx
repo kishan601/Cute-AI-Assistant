@@ -10,7 +10,7 @@ import FeedbackOverview from "@/pages/FeedbackOverview";
 import { useEffect } from "react";
 
 // Route with conversation ID - wouter extracts params differently
-const ChatRoute = (props: any) => {
+const ChatRoute = (props: {params: {id: string}}) => {
   const conversationId = parseInt(props.params.id, 10);
   return <Chat initialConversationId={conversationId} />;
 };
@@ -18,11 +18,21 @@ const ChatRoute = (props: any) => {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Chat} />
-      <Route path="/chat/:id" component={ChatRoute} />
-      <Route path="/history" component={History} />
-      <Route path="/feedback" component={FeedbackOverview} />
-      <Route component={NotFound} />
+      <Route path="/">
+        {() => <Chat />}
+      </Route>
+      <Route path="/chat/:id">
+        {(params) => <ChatRoute params={params} />}
+      </Route>
+      <Route path="/history">
+        {() => <History />}
+      </Route>
+      <Route path="/feedback">
+        {() => <FeedbackOverview />}
+      </Route>
+      <Route>
+        {() => <NotFound />}
+      </Route>
     </Switch>
   );
 }
