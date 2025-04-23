@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "./storage";
 
+// Request processing lock to prevent duplicate message processing
+const processingMessages = new Set<string>();
+
 interface TavilySearchResponse {
   results: {
     title: string;
@@ -139,6 +142,9 @@ async function performSearch(query: string): Promise<{success: boolean, result?:
 }
 
 export async function chatHandler(req: Request, res: Response) {
+  // Define requestKey at function scope so it's available in catch block
+  let requestKey = '';
+  
   try {
     console.log("Chat handler received request body:", req.body);
     
@@ -148,6 +154,19 @@ export async function chatHandler(req: Request, res: Response) {
     });
     
     const { conversationId, message } = messageSchema.parse(req.body);
+    
+    // Create a unique key for this request to prevent duplicate processing
+    requestKey = `${conversationId}-${message}-${Date.now()}`;
+    
+    // Check if we're already processing this message
+    if (processingMessages.has(requestKey)) {
+      console.log("Duplicate message detected, ignoring:", { conversationId, message });
+      return res.status(409).json({ message: "Message is already being processed" });
+    }
+    
+    // Add to processing set
+    processingMessages.add(requestKey);
+    
     console.log("Parsed message request:", { conversationId, message });
     
     // Check if conversation exists
@@ -226,11 +245,18 @@ export async function chatHandler(req: Request, res: Response) {
       disliked: false
     });
     
+    // Remove from processing set
+    processingMessages.delete(requestKey);
+    
     res.json({
       userMessage,
       aiMessage: aiMessageData
     });
   } catch (error) {
+    // Make sure to cleanup the processing set even if there's an error
+    if (requestKey) {
+      processingMessages.delete(requestKey);
+    }
     if (error instanceof z.ZodError) {
       res.status(400).json({ message: "Invalid chat data", errors: error.errors });
     } else {

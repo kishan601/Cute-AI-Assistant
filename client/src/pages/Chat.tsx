@@ -62,12 +62,10 @@ const Chat = ({ initialConversationId }: ChatProps) => {
       return res.json();
     },
     onSuccess: (data) => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        data.userMessage,
-        data.aiMessage
-      ]);
+      // We're not manually adding messages anymore, as they will come from the useEffect
+      // that watches the conversation object. This prevents duplicates.
       
+      // Just invalidate the query to fetch the updated conversation
       queryClient.invalidateQueries({ 
         queryKey: ["/api/conversations", activeConversationId]
       });
