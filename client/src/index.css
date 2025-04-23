@@ -152,7 +152,21 @@
 
 /* Star Rating Styles */
 .star-button {
-  @apply text-2xl text-gray-300 hover:text-yellow-400 cursor-pointer transition-colors dark:text-gray-600 dark:hover:text-yellow-400;
+  @apply text-2xl cursor-pointer transition-colors;
+}
+
+/* Custom Animations */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s infinite ease-in-out;
 }
 
 .star-active {
