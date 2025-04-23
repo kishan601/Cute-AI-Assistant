@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MessageType } from "@shared/schema";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { ThumbsUp, ThumbsDown, User, Bot } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MessageBubbleProps {
   message: MessageType;
@@ -8,7 +11,18 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble = ({ message, onFeedback }: MessageBubbleProps) => {
-  const { id, sender, content, liked, disliked } = message;
+  const { id, sender, content, timestamp, liked, disliked } = message;
+  const [isVisible, setIsVisible] = useState(false);
+  const messageRef = useRef<HTMLDivElement>(null);
+  
+  // Animation on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   const handleLike = () => {
     onFeedback(id, true, false);
@@ -18,58 +32,130 @@ const MessageBubble = ({ message, onFeedback }: MessageBubbleProps) => {
     onFeedback(id, false, true);
   };
 
-  // Replace "Soul AI" with a span for styling
+  // Replace "Bot AI" with a span for styling
   const renderContent = () => {
-    if (sender === 'ai' && content.includes('Soul AI')) {
-      return content.replace('Soul AI', '<span class="font-semibold text-[#9F8FEF]">Soul AI</span>');
+    if (sender === 'ai' && content.includes('Bot AI')) {
+      return content.replace('Bot AI', '<span class="font-semibold text-indigo-600 dark:text-indigo-400">Bot AI</span>');
     }
     return content;
   };
 
+  // Format the timestamp
+  const formattedTime = new Date(timestamp).toLocaleTimeString([], { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: true 
+  });
+
   return (
-    <div className={`message ${sender === 'user' ? 'user-message' : 'ai-message'}`}>
-      <div
-        className={`message-bubble group ${
-          sender === 'user' ? 'user-bubble' : 'ai-bubble'
-        }`}
-      >
-        {sender === 'ai' && (
-          <div className="feedback-buttons">
-            <button
-              className={`feedback-button ${liked ? 'text-green-500' : ''}`}
-              onClick={handleLike}
-              aria-label="Like message"
-            >
-              <ThumbsUp size={16} />
-            </button>
-            <button
-              className={`feedback-button ${disliked ? 'text-red-500' : ''}`}
-              onClick={handleDislike}
-              aria-label="Dislike message"
-            >
-              <ThumbsDown size={16} />
-            </button>
-          </div>
-        )}
-        
-        <p dangerouslySetInnerHTML={{ __html: renderContent() }} />
-        
-        {/* Show feedback indicator if message has feedback */}
-        {sender === 'ai' && (liked || disliked) && (
-          <div className="mt-2 text-sm">
-            {liked ? (
-              <span className="flex items-center">
-                <ThumbsUp size={14} className="text-green-500 mr-1" />
-                <span className="text-green-500">You liked this response</span>
-              </span>
-            ) : (
-              <span className="flex items-center">
-                <ThumbsDown size={14} className="text-red-500 mr-1" />
-                <span className="text-red-500">You disliked this response</span>
-              </span>
+    <div 
+      ref={messageRef}
+      className={cn(
+        "message mb-6 transition-opacity duration-300 ease-in-out",
+        sender === 'user' ? "user-message" : "ai-message",
+        !isVisible && "opacity-0",
+        isVisible && "opacity-100"
+      )}
+    >
+      <div className={cn(
+        "flex items-start gap-3",
+        sender === 'user' ? "flex-row-reverse" : "flex-row"
+      )}>
+        {/* Avatar */}
+        <div className={cn(
+          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+          sender === 'user' 
+            ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300" 
+            : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+        )}>
+          {sender === 'user' ? <User size={14} /> : <Bot size={14} />}
+        </div>
+
+        {/* Message Content */}
+        <div className={cn(
+          "relative group max-w-[80%]",
+          sender === 'user' ? "text-right" : "text-left"
+        )}>
+          <div className={cn(
+            "message-bubble rounded-lg p-4 shadow-sm inline-block",
+            sender === 'user' ? 
+              "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white dark:from-indigo-600 dark:to-indigo-800" : 
+              "bg-white text-gray-800 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+          )}>
+            <p 
+              className="message-text whitespace-pre-wrap" 
+              dangerouslySetInnerHTML={{ __html: renderContent() }} 
+            />
+            
+            {/* Show feedback indicator if message has feedback */}
+            {sender === 'ai' && (liked || disliked) && (
+              <div className="mt-3 text-sm px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/50">
+                {liked ? (
+                  <span className="flex items-center">
+                    <ThumbsUp size={14} className="text-green-500 mr-1" />
+                    <span className="text-green-600 dark:text-green-400 text-xs">You liked this response</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <ThumbsDown size={14} className="text-red-500 mr-1" />
+                    <span className="text-red-600 dark:text-red-400 text-xs">You disliked this response</span>
+                  </span>
+                )}
+              </div>
             )}
           </div>
-        )}
+          
+          {/* Timestamp */}
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {formattedTime}
+          </div>
+          
+          {/* Feedback buttons for AI messages */}
+          {sender === 'ai' && (
+            <div className={cn(
+              "feedback-buttons absolute -right-14 top-0 flex flex-col items-center space-y-1",
+              "opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            )}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className={cn(
+                      "feedback-button w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-md",
+                      "hover:bg-gray-100 transition-colors dark:bg-gray-800 dark:hover:bg-gray-700",
+                      liked && "bg-green-50 text-green-500 dark:bg-green-900/30"
+                    )}
+                    onClick={handleLike}
+                    aria-label="Like message"
+                  >
+                    <ThumbsUp size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {liked ? 'Remove like' : 'Like this response'}
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className={cn(
+                      "feedback-button w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-md",
+                      "hover:bg-gray-100 transition-colors dark:bg-gray-800 dark:hover:bg-gray-700",
+                      disliked && "bg-red-50 text-red-500 dark:bg-red-900/30"
+                    )}
+                    onClick={handleDislike}
+                    aria-label="Dislike message"
+                  >
+                    <ThumbsDown size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {disliked ? 'Remove dislike' : 'Dislike this response'}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -8,6 +8,9 @@ import MessageBubble from "@/components/MessageBubble";
 import SuggestedQueries from "@/components/SuggestedQueries";
 import FeedbackForm from "@/components/FeedbackForm";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
+import { Bot, ChevronDown, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ChatProps {
   initialConversationId?: number;
@@ -20,6 +23,7 @@ const Chat = ({ initialConversationId }: ChatProps) => {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [titleFromFirstMessage, setTitleFromFirstMessage] = useState("");
   const messageContainerRef = useRef<HTMLDivElement>(null);
+  const scrollButtonRef = useRef<HTMLButtonElement>(null);
 
   // Create a new conversation
   const createConversationMutation = useMutation({
@@ -129,6 +133,11 @@ const Chat = ({ initialConversationId }: ChatProps) => {
   const handleSaveConversation = () => {
     if (activeConversationId && messages.length > 0) {
       setShowFeedbackForm(true);
+      
+      // Scroll to the feedback form
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
     }
   };
 
@@ -163,21 +172,21 @@ const Chat = ({ initialConversationId }: ChatProps) => {
 
   // Scroll lock and auto-scroll functionality
   const [autoScroll, setAutoScroll] = useState(true);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [containerHeight, setContainerHeight] = useState(0);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   
   // Handle scroll events to detect if user has scrolled up (to disable auto-scroll)
   const handleScroll = () => {
     if (!messageContainerRef.current) return;
     
     const { scrollTop, scrollHeight, clientHeight } = messageContainerRef.current;
-    setScrollPosition(scrollTop);
-    setContainerHeight(scrollHeight - clientHeight);
     
-    // If the user has scrolled up more than 100px, disable auto-scroll
-    // If they scroll to bottom, re-enable auto-scroll
-    const isAtBottom = scrollHeight - clientHeight - scrollTop < 50;
+    // If the user has scrolled up more than 100px, disable auto-scroll and show scroll button
+    // If they scroll to bottom, re-enable auto-scroll and hide scroll button
+    const scrollFromBottom = scrollHeight - clientHeight - scrollTop;
+    const isAtBottom = scrollFromBottom < 50;
+    
     setAutoScroll(isAtBottom);
+    setShowScrollButton(!isAtBottom && scrollFromBottom > 200);
   };
   
   // Attach scroll event listener
@@ -192,48 +201,78 @@ const Chat = ({ initialConversationId }: ChatProps) => {
   // Scroll to bottom when messages change, but only if autoScroll is enabled
   useEffect(() => {
     if (messageContainerRef.current && autoScroll) {
-      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+      scrollToBottom();
     }
   }, [messages, autoScroll]);
   
   // Force scroll to bottom when a new message is being composed
   const scrollToBottom = () => {
     if (messageContainerRef.current) {
-      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+      messageContainerRef.current.scrollTo({
+        top: messageContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
       setAutoScroll(true);
+      setShowScrollButton(false);
     }
   };
 
+  // Get active conversation title
+  const activeConversationTitle = conversation?.title || "New Conversation";
+
   return (
-    <div className="font-inter h-screen flex flex-col md:flex-row overflow-hidden">
+    <div className="h-screen flex flex-col md:flex-row overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Sidebar activeConversationId={activeConversationId} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-hidden relative">
           {/* Chat Header */}
-          <div className="p-4 border-b border-gray-200 bg-white flex items-center">
-            <h1 className="text-xl font-semibold text-[#9F8FEF]">Bot AI</h1>
+          <div className="sticky top-0 z-10 p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-3">
+                <Bot className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <h1 className="text-lg font-semibold text-indigo-700 dark:text-indigo-400">
+                {activeConversationId ? activeConversationTitle : "Bot AI"}
+              </h1>
+            </div>
+            
+            {/* Connection status */}
+            <div className="flex items-center">
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <span className="h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+                <span>Connected</span>
+              </div>
+            </div>
           </div>
 
           {/* Chat Messages Container */}
-          <div ref={messageContainerRef} className="overflow-y-auto p-4 h-full bg-secondary chat-container">
+          <div 
+            ref={messageContainerRef} 
+            className={cn(
+              "overflow-y-auto px-4 md:px-6 py-6 h-full chat-container",
+              "bg-gray-50 dark:bg-gray-950"
+            )}
+          >
             {/* Initial greeting view with suggestions */}
             {!activeConversationId || messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <h2 className="text-2xl font-bold mb-8 text-foreground">How Can I Help You Today?</h2>
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-12">
-                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="24" cy="24" r="24" fill="#9F8FEF" opacity="0.2" />
-                    <path d="M24 12C17.373 12 12 17.373 12 24C12 30.627 17.373 36 24 36C30.627 36 36 30.627 36 24C36 17.373 30.627 12 24 12ZM24 34C18.486 34 14 29.514 14 24C14 18.486 18.486 14 24 14C29.514 14 34 18.486 34 24C34 29.514 29.514 34 24 34Z" fill="#9F8FEF"/>
-                    <path d="M17 24H31V25H17V24Z" fill="#9F8FEF"/>
-                    <path d="M24 17V31H23V17H24Z" fill="#9F8FEF"/>
-                  </svg>
+              <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto">
+                <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mb-6 shadow-lg">
+                  <Bot className="h-10 w-10 text-white" />
                 </div>
+                
+                <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100 text-center">
+                  How can I help you today?
+                </h2>
+                
+                <p className="text-gray-600 dark:text-gray-400 text-center mb-8 max-w-md">
+                  Ask me anything or start with one of the suggested queries below.
+                </p>
                 
                 <SuggestedQueries onQueryClick={handleSendMessage} />
               </div>
             ) : (
-              <div className="flex flex-col space-y-4">
+              <div className="flex flex-col space-y-4 max-w-3xl mx-auto pb-4">
                 {messages.map((message) => (
                   <MessageBubble
                     key={message.id}
@@ -244,29 +283,52 @@ const Chat = ({ initialConversationId }: ChatProps) => {
                 
                 {chatMessageMutation.isPending && (
                   <div className="flex justify-start mb-4">
-                    <div className="bg-white border border-gray-200 p-4 rounded-lg">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-lg shadow-sm">
                       <div className="flex space-x-2">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0s" }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+                        <div className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "0s" }}></div>
+                        <div className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                        <div className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
                       </div>
                     </div>
                   </div>
                 )}
                 
                 {showFeedbackForm && (
-                  <FeedbackForm onSubmit={handleSubmitFeedback} />
+                  <div className="mt-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-xl shadow-sm">
+                    <FeedbackForm onSubmit={handleSubmitFeedback} />
+                  </div>
                 )}
               </div>
+            )}
+            
+            {/* Scroll to bottom button */}
+            {showScrollButton && (
+              <Button
+                ref={scrollButtonRef}
+                onClick={scrollToBottom}
+                size="sm"
+                className={cn(
+                  "fixed bottom-24 right-8 rounded-full shadow-md p-2 h-10 w-10",
+                  "bg-indigo-600 hover:bg-indigo-700 text-white",
+                  "dark:bg-indigo-700 dark:hover:bg-indigo-600",
+                  "transition-all duration-300 z-20",
+                  "animate-bounce-slow"
+                )}
+                aria-label="Scroll to bottom"
+              >
+                <ChevronDown className="h-5 w-5" />
+              </Button>
             )}
           </div>
 
           {/* Chat Input */}
-          <ChatInput 
-            onSendMessage={handleSendMessage} 
-            onSaveConversation={handleSaveConversation}
-            disabled={chatMessageMutation.isPending || isLoadingConversation || showFeedbackForm}
-          />
+          <div className="sticky bottom-0 z-10">
+            <ChatInput 
+              onSendMessage={handleSendMessage} 
+              onSaveConversation={handleSaveConversation}
+              disabled={chatMessageMutation.isPending || isLoadingConversation || showFeedbackForm}
+            />
+          </div>
         </div>
       </div>
     </div>
