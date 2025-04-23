@@ -51,6 +51,55 @@ export class MemStorage implements IStorage {
     this.currentUserId = 1;
     this.currentMessageId = 1;
     this.currentConversationId = 1;
+    
+    // Create sample conversation for testing
+    this.initializeTestData();
+  }
+  
+  private initializeTestData() {
+    console.log("Initializing test data for chat application...");
+    
+    // Create a sample conversation
+    const sampleConversation: Conversation = {
+      id: 1,
+      title: "Welcome Conversation",
+      timestamp: new Date(),
+      rating: 0,
+      feedback: ""
+    };
+    
+    this.conversations.set(1, sampleConversation);
+    console.log("Created sample conversation with ID:", 1);
+    
+    // Set the next conversation ID
+    this.currentConversationId = 2;
+    
+    // Create welcome messages
+    const userMessage: Message = {
+      id: 1,
+      conversationId: 1,
+      sender: "user",
+      content: "Hello, I'm new here!",
+      timestamp: new Date(),
+      liked: false,
+      disliked: false
+    };
+    
+    const aiMessage: Message = {
+      id: 2,
+      conversationId: 1,
+      sender: "ai",
+      content: "Welcome! I'm your AI assistant. I can help you find information, answer questions, and more. Try asking me something!",
+      timestamp: new Date(),
+      liked: false,
+      disliked: false
+    };
+    
+    this.messages.set(1, userMessage);
+    this.messages.set(2, aiMessage);
+    this.currentMessageId = 3;
+    
+    console.log("Test data initialized successfully!");
   }
 
   // User methods (keeping from template)

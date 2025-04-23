@@ -112,18 +112,32 @@ async function performSearch(query: string): Promise<{success: boolean, result?:
 
 export async function chatHandler(req: Request, res: Response) {
   try {
+    console.log("Chat handler received request body:", req.body);
+    
     const messageSchema = z.object({
       conversationId: z.number().positive(),
       message: z.string().min(1)
     });
     
     const { conversationId, message } = messageSchema.parse(req.body);
+    console.log("Parsed message request:", { conversationId, message });
     
     // Check if conversation exists
+    console.log("Checking for conversation ID:", conversationId);
     const conversation = await storage.getConversation(conversationId);
+    console.log("Conversation found:", conversation !== undefined);
+    
     if (!conversation) {
+      console.log("Conversation not found, returning 404");
+      
+      // Debugging: Check what conversations actually exist
+      const allConversations = await storage.getAllConversations();
+      console.log("All available conversations:", allConversations.map(c => c.id));
+      
       return res.status(404).json({ message: "Conversation not found" });
     }
+    
+    console.log("Found conversation:", conversation);
     
     // Save user message
     const userMessage = await storage.createMessage({

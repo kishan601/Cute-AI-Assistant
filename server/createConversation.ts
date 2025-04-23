@@ -5,6 +5,8 @@ import { storage } from "./storage";
 // This is a standalone handler for creating new conversations
 export async function createConversationHandler(req: Request, res: Response) {
   try {
+    console.log("Creating conversation with request body:", req.body);
+    
     // Explicitly parse the request body with a more flexible schema
     const schema = z.object({
       title: z.string(),
@@ -14,6 +16,11 @@ export async function createConversationHandler(req: Request, res: Response) {
     });
     
     const validatedData = schema.parse(req.body);
+    console.log("Validated data:", validatedData);
+    
+    // Get all existing conversations for debugging
+    const existingConversations = await storage.getAllConversations();
+    console.log("Existing conversations before creation:", existingConversations.map(c => c.id));
     
     // Create the conversation with a new Date object
     const conversation = await storage.createConversation({
@@ -22,6 +29,12 @@ export async function createConversationHandler(req: Request, res: Response) {
       rating: validatedData.rating,
       feedback: validatedData.feedback
     });
+    
+    console.log("Created conversation:", conversation);
+    
+    // Verify the conversation was stored correctly
+    const storedConversation = await storage.getConversation(conversation.id);
+    console.log("Conversation stored successfully:", storedConversation !== undefined);
     
     res.status(201).json(conversation);
   } catch (error) {
