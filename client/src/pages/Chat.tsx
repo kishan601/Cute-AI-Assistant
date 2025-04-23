@@ -25,6 +25,8 @@ const Chat = ({ initialConversationId }: ChatProps) => {
   const [titleFromFirstMessage, setTitleFromFirstMessage] = useState("");
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const scrollButtonRef = useRef<HTMLButtonElement>(null);
+  const [isProcessingMessage, setIsProcessingMessage] = useState(false); // Added to prevent duplicate submissions
+  const [lastSentMessage, setLastSentMessage] = useState(""); // Added to track last sent message
 
   // Create a new conversation
   const createConversationMutation = useMutation({
@@ -58,17 +60,20 @@ const Chat = ({ initialConversationId }: ChatProps) => {
   // Submit a chat message
   const chatMessageMutation = useMutation({
     mutationFn: async ({ conversationId, message }: { conversationId: number, message: string }) => {
+      console.log(`Sending message to API: ${message}`);
       const res = await apiRequest("POST", "/api/chat", { conversationId, message });
       return res.json();
     },
     onSuccess: (data) => {
-      // We're not manually adding messages anymore, as they will come from the useEffect
-      // that watches the conversation object. This prevents duplicates.
-      
       // Just invalidate the query to fetch the updated conversation
       queryClient.invalidateQueries({ 
         queryKey: ["/api/conversations", activeConversationId]
       });
+      setIsProcessingMessage(false);
+    },
+    onError: (error) => {
+      console.error("Error sending message:", error);
+      setIsProcessingMessage(false);
     }
   });
 
@@ -107,9 +112,29 @@ const Chat = ({ initialConversationId }: ChatProps) => {
 
   // Handle sending a message
   const handleSendMessage = async (message: string) => {
+    // Basic validation
     if (!message.trim()) return;
+    if (isProcessingMessage) {
+      console.log("Already processing a message, ignoring this one");
+      return;
+    }
+
+    // Check for duplicate message
+    if (message === lastSentMessage) {
+      console.log("Duplicate message detected, ignoring:", message);
+      return;
+    }
+    
+    // Check if message already exists in current conversation
+    if (messages.some(msg => msg.sender === 'user' && msg.content === message)) {
+      console.log("This message already exists in conversation, ignoring:", message);
+      return;
+    }
     
     try {
+      setIsProcessingMessage(true);
+      setLastSentMessage(message);
+      
       // Create a new conversation if one doesn't exist
       if (!activeConversationId) {
         console.log("Creating new conversation");
@@ -131,17 +156,13 @@ const Chat = ({ initialConversationId }: ChatProps) => {
       
       // Send the message to the existing conversation
       console.log("Sending message to conversation:", activeConversationId);
-      // Don't send duplicate messages
-      if (messages.some(msg => msg.sender === 'user' && msg.content === message)) {
-        console.log("Duplicate message detected, not sending:", message);
-        return;
-      }
       chatMessageMutation.mutate({ 
         conversationId: activeConversationId, 
         message 
       });
     } catch (error) {
       console.error("Error handling message:", error);
+      setIsProcessingMessage(false);
     }
   };
 
@@ -176,7 +197,11 @@ const Chat = ({ initialConversationId }: ChatProps) => {
   // Update messages when conversation data changes
   useEffect(() => {
     if (conversation && conversation.messages) {
-      setMessages(conversation.messages);
+      // Make sure we sort by timestamp to keep messages in order
+      const sortedMessages = [...conversation.messages].sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+      setMessages(sortedMessages);
     }
   }, [conversation]);
 
@@ -254,6 +279,25 @@ const Chat = ({ initialConversationId }: ChatProps) => {
     return searchKeywords.some(keyword => lowercaseMessage.includes(keyword));
   };
 
+  // Render the message list with a key based on message id and text to ensure uniqueness
+  const renderMessages = () => {
+    // Create a Map to deduplicate messages
+    const deduplicatedMessages = new Map<string, MessageType>();
+    
+    messages.forEach(message => {
+      const key = `${message.id}-${message.sender}-${message.content}`;
+      deduplicatedMessages.set(key, message);
+    });
+    
+    return Array.from(deduplicatedMessages.values()).map(message => (
+      <MessageBubble
+        key={`${message.id}-${message.sender}`}
+        message={message}
+        onFeedback={handleMessageFeedback}
+      />
+    ));
+  };
+
   return (
     <div className="h-screen flex flex-col md:flex-row overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Sidebar activeConversationId={activeConversationId} />
@@ -307,13 +351,7 @@ const Chat = ({ initialConversationId }: ChatProps) => {
               </div>
             ) : (
               <div className="flex flex-col space-y-4 max-w-3xl mx-auto pb-4">
-                {messages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    onFeedback={handleMessageFeedback}
-                  />
-                ))}
+                {renderMessages()}
                 
                 {chatMessageMutation.isPending && (
                   <>
@@ -369,7 +407,7 @@ const Chat = ({ initialConversationId }: ChatProps) => {
             <ChatInput 
               onSendMessage={handleSendMessage} 
               onSaveConversation={handleSaveConversation}
-              disabled={chatMessageMutation.isPending || isLoadingConversation || showFeedbackForm}
+              disabled={chatMessageMutation.isPending || isLoadingConversation || showFeedbackForm || isProcessingMessage}
             />
           </div>
         </div>

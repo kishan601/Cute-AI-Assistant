@@ -153,10 +153,6 @@ async function performSearch(query: string): Promise<{success: boolean, result?:
   }
 }
 
-// Set for tracking in-progress messages (deduplication)
-// This is already declared at the top of the file
-// const processingMessages = new Set<string>();
-
 // Cleanup function to ensure keys are removed from the processing set
 const cleanupRequestKey = (key: string) => {
   if (processingMessages.has(key)) {
@@ -217,6 +213,8 @@ export async function chatHandler(req: Request, res: Response) {
       const allConversations = await storage.getAllConversations();
       console.log("All available conversations:", allConversations.map(c => c.id));
       
+      // Clean up before returning
+      cleanupRequestKey(requestKey);
       return res.status(404).json({ message: "Conversation not found" });
     }
     
@@ -282,7 +280,7 @@ export async function chatHandler(req: Request, res: Response) {
     });
     
     // Remove from processing set
-    processingMessages.delete(requestKey);
+    cleanupRequestKey(requestKey);
     
     res.json({
       userMessage,
@@ -290,9 +288,8 @@ export async function chatHandler(req: Request, res: Response) {
     });
   } catch (error) {
     // Make sure to cleanup the processing set even if there's an error
-    if (requestKey) {
-      processingMessages.delete(requestKey);
-    }
+    cleanupRequestKey(requestKey);
+    
     if (error instanceof z.ZodError) {
       res.status(400).json({ message: "Invalid chat data", errors: error.errors });
     } else {
