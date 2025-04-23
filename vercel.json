@@ -2,7 +2,5 @@
     "rewrites": [
       { "source": "/(.*)", "destination": "/index.html" }
     ],
-    "buildCommand": "vite build",
-    "outputDirectory": "dist",
-    "env": { "VITE_PROD": "true" }
+    "outputDirectory": "dist/public"
   }
