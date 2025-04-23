@@ -111,18 +111,35 @@ const Chat = ({ initialConversationId }: ChatProps) => {
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
     
-    // Create a new conversation if one doesn't exist
-    if (!activeConversationId) {
-      setTitleFromFirstMessage(message);
-      await createConversationMutation.mutateAsync(message.slice(0, 30) + (message.length > 30 ? "..." : ""));
-      return;
+    try {
+      // Create a new conversation if one doesn't exist
+      if (!activeConversationId) {
+        console.log("Creating new conversation");
+        setTitleFromFirstMessage(message);
+        const newConversation = await createConversationMutation.mutateAsync(message.slice(0, 30) + (message.length > 30 ? "..." : ""));
+        console.log("New conversation created:", newConversation);
+        
+        // After creating a conversation, send the message directly instead of waiting for effect
+        if (newConversation && newConversation.id) {
+          setTimeout(() => {
+            chatMessageMutation.mutate({ 
+              conversationId: newConversation.id, 
+              message 
+            });
+          }, 100);
+        }
+        return;
+      }
+      
+      // Send the message to the existing conversation
+      console.log("Sending message to conversation:", activeConversationId);
+      chatMessageMutation.mutate({ 
+        conversationId: activeConversationId, 
+        message 
+      });
+    } catch (error) {
+      console.error("Error handling message:", error);
     }
-    
-    // Send the message to the existing conversation
-    chatMessageMutation.mutate({ 
-      conversationId: activeConversationId, 
-      message 
-    });
   };
 
   // Handle message feedback (like/dislike)
