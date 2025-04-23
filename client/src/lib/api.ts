@@ -1,4 +1,5 @@
 import { apiRequest } from "./queryClient";
+import API_URL from '../config';
 import { 
   MessageType, 
   ConversationType, 
@@ -9,7 +10,7 @@ import {
 export const api = {
   // Conversation APIs
   async getConversations(): Promise<ConversationType[]> {
-    const res = await fetch("/api/conversations");
+    const res = await fetch(`${API_URL}/api/conversations`);
     if (!res.ok) throw new Error("Failed to fetch conversations");
     return res.json();
   },

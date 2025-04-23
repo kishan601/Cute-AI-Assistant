@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
+import cors from 'cors';
 import { 
   insertMessageSchema, 
   insertConversationSchema,
@@ -11,7 +12,10 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes for the chat application
-  
+  app.use(cors({
+    origin: '*',
+    credentials: true
+  }));
   // Get all conversations
   app.get("/api/conversations", async (req, res) => {
     try {
