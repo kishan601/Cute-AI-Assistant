@@ -441,7 +441,7 @@ const Chat = ({ initialConversationId }: ChatProps) => {
                 <SuggestedQueries onQueryClick={handleSendMessage} />
               </div>
             ) : (
-              <div className="flex flex-col space-y-4 max-w-3xl mx-auto pb-4">
+              <div className="flex flex-col space-y-4 w-full max-w-5xl mx-auto pb-4 px-4">
                 {renderMessages()}
                 
                 {chatMessageMutation.isPending && (

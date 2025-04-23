@@ -51,7 +51,7 @@ const MessageBubble = ({ message, onFeedback }: MessageBubbleProps) => {
     <div 
       ref={messageRef}
       className={cn(
-        "message mb-6",
+        "message mb-6 w-full max-w-4xl mx-auto",
         sender === 'user' ? "user-message" : "ai-message",
         !isVisible && "opacity-0",
         isVisible && sender === 'user' ? "animate-slide-in-right" : 
@@ -59,7 +59,7 @@ const MessageBubble = ({ message, onFeedback }: MessageBubbleProps) => {
       )}
     >
       <div className={cn(
-        "flex items-start gap-3",
+        "flex items-start gap-3 w-full justify-between",
         sender === 'user' ? "flex-row-reverse" : "flex-row"
       )}>
         {/* Avatar */}
@@ -74,14 +74,14 @@ const MessageBubble = ({ message, onFeedback }: MessageBubbleProps) => {
 
         {/* Message Content */}
         <div className={cn(
-          "relative group max-w-[80%]",
-          sender === 'user' ? "text-right" : "text-left"
+          "relative group",
+          sender === 'user' ? "text-right ml-auto max-w-[90%] md:max-w-[70%]" : "text-left mr-auto max-w-[90%] md:max-w-[70%]"
         )}>
           <div className={cn(
-            "message-bubble rounded-lg p-4 shadow-sm inline-block",
+            "message-bubble rounded-lg p-4 shadow-sm",
             sender === 'user' ? 
-              "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white dark:from-indigo-600 dark:to-indigo-800" : 
-              "bg-white text-gray-800 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100",
+              "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white dark:from-indigo-600 dark:to-indigo-800 rounded-tr-none" : 
+              "bg-white text-gray-800 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 rounded-tl-none",
             isVisible && "animate-pulse-once"
           )}>
             <p 
