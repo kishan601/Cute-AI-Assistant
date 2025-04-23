@@ -37,8 +37,8 @@ const NON_SEARCH_PHRASES = [
 // Direct response patterns that don't need search
 const DIRECT_RESPONSE_PATTERNS = [
   { pattern: /how are you/i, response: true },
-  { pattern: /^hi\b/i, response: true },
-  { pattern: /^hello\b/i, response: true },
+  { pattern: /^hi$|^hi\s+there/i, response: true }, // Only match standalone "hi" or "hi there"
+  { pattern: /^hello$|^hello\s+there/i, response: true }, // Only match standalone "hello" or "hello there"
   { pattern: /thank/i, response: true },
   { pattern: /your name/i, response: true },
   { pattern: /who are you/i, response: true },
